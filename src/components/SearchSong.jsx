@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { api } from '../lib/axios'
 
 export default function SearchSong() {
@@ -7,8 +8,8 @@ export default function SearchSong() {
   const [playlists, setPlaylists] = useState([])
   const [selectedPlaylistId, setSelectedPlaylistId] = useState('')
   const [error, setError] = useState(null)
+  const [searchParams] = useSearchParams()
 
-  // Obtener playlists
   useEffect(() => {
     const fetchPlaylists = async () => {
       try {
@@ -22,10 +23,16 @@ export default function SearchSong() {
     fetchPlaylists()
   }, [])
 
-  // Buscar canciones
+  useEffect(() => {
+    const initialPlaylistId = searchParams.get('playlistId')
+    if (initialPlaylistId) {
+      setSelectedPlaylistId(initialPlaylistId)
+    }
+  }, [searchParams])
+
   const handleSearch = async () => {
     try {
-      const response = await api.get(`/deezer/search?q=${searchTerm}`)
+      const response = await api.get(`/deezer/search?q=${searchTerm}&type=track`)
       const data = response.data
       setSongs(data.data)
       setError(null)
@@ -35,7 +42,6 @@ export default function SearchSong() {
     }
   }
 
-  // Agregar canción a playlist
   const handleAddToPlaylist = async (song) => {
     if (!selectedPlaylistId) {
       alert('Selecciona una playlist antes de agregar la canción')
@@ -63,6 +69,25 @@ export default function SearchSong() {
   return (
     <div>
       <h2>Buscar Canciones en Deezer</h2>
+
+
+      <div style={{ margin: '20px 0' }}>
+        <label htmlFor="playlist-select">Seleccionar playlist: </label>
+        <select
+          id="playlist-select"
+          value={selectedPlaylistId}
+          onChange={(e) => setSelectedPlaylistId(e.target.value)}
+        >
+          <option value="">-- Elige una playlist --</option>
+          {playlists.map((pl) => (
+            <option key={pl.id} value={pl.id}>
+              {pl.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+    
       <input
         type="text"
         value={searchTerm}
@@ -73,21 +98,15 @@ export default function SearchSong() {
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
+      
       <div>
-        <h3>Selecciona una Playlist:</h3>
-        <select
-          value={selectedPlaylistId}
-          onChange={(e) => setSelectedPlaylistId(e.target.value)}
-        >
-          <option value="">-- Elige una Playlist --</option>
-          {playlists.map((playlist) => (
-            <option key={playlist.id} value={playlist.id}>
-              {playlist.name}
-            </option>
-          ))}
-        </select>
+        <h3>
+          Será agregada a:{' '}
+          {playlists.find(p => p.id.toString() === selectedPlaylistId)?.name || 'Ninguna'}
+        </h3>
       </div>
 
+      
       <div style={{ marginTop: '20px' }}>
         {songs.map((song) => (
           <div
